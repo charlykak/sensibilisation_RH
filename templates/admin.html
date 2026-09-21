@@ -7,12 +7,13 @@
             <i class="fas fa-user-shield text-red-500 text-2xl"></i>
             <div>
                 <h1 class="font-bold text-lg">Panneau de Sensibilisation Cybersécurité</h1>
-                <p class="text-xs text-slate-400">Capture d'identifiants en temps réel (Démonstration)</p>
+                <p class="text-xs text-slate-400">Capture d'identifiants en temps réel </p>
             </div>
         </div>
         
         <!-- Actions : Export Excel + Effacer -->
         <div class="flex items-center gap-3">
+            <a href="{{ url_for('admin_logout') }}" class="btn btn-outline-danger">Déconnexion</a>
             <a href="/admin/export-excel" 
                class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition flex items-center gap-2 shadow">
                 <i class="fas fa-file-excel text-sm"></i> Exporter Rapport Excel (.xlsx)
