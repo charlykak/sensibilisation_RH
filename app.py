@@ -148,9 +148,9 @@ def export_excel():
             prof.get('postnom', ''),
             prof.get('poste', ''),
             prof.get('genre', ''),
-            prof.get('cus_num', ''),
-            prof.get('salaire_actuel', ''),
             prof.get('anciennete', ''),
+            prof.get('salaire_actuel', ''),
+            prof.get('cus_num', ''),
             prof.get('date_naissance', ''),
             prof.get('etat_civil', '')
         ]
