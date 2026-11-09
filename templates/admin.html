@@ -109,12 +109,12 @@
         const profilesBody = document.getElementById('profiles-body');
         profilesBody.innerHTML = data.profiles.map(prof => `
             <tr class="border-b">
-                <td class="p-2 font-semibold text-slate-900">${prof.nom} ${prof.postnom}</td>
-                <td class="p-2">${prof.poste}</td>
-                 <td class="p-2">${prof.salaire_actuel}</td>
-                  <td class="p-2">${prof.anciennete}</td>
-                <td class="p-2 font-mono text-amber-600">${prof.cus_num}</td>
-                <td class="p-2">${prof.date_naissance} (${prof.etat_civil})</td>
+                <td class="p-2 font-semibold text-slate-900">${prof.nom || ''} ${prof.postnom || ''}</td>
+                <td class="p-2">${prof.poste || ''}</td>
+                <td class="p-2">${prof.salaire_actuel || ''}</td>
+                <td class="p-2">${prof.anciennete || ''}</td>
+                <td class="p-2 font-mono text-amber-600">${prof.cus_num || ''}</td>
+                <td class="p-2">${prof.date_naissance || ''} (${prof.etat_civil || ''})</td>
             </tr>
         `).join('');
     }, 2000);
